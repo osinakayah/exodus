@@ -12,7 +12,7 @@ export class AppBackground {
     }
 
 
-     async loopThroughSingleBlock(blockHeight: number, blockHash: string = null){
+     async loopThroughSingleBlock(blockHeight: number, blockHash: string = null): Promise<any> {
         try {
             if (blockHash == null) {
                 blockHash = await this.bitCoinCli.getBlockHash(blockHeight)
@@ -31,10 +31,7 @@ export class AppBackground {
 
             if (this.isNextBlockAvailable(blockDetails)) {
                 this.updateLastReadBlock(blockDetails.height + 1);
-                // To prevent deep recursion stack
-                setTimeout(()=> {
-                    return this.loopThroughSingleBlock(blockDetails.height + 1, blockDetails.nextblockhash);
-                }, 2000);
+                return this.loopThroughSingleBlock(blockDetails.height + 1, blockDetails.nextblockhash);
             }
             else {
                 // Blocks has been synced

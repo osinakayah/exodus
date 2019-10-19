@@ -6,8 +6,6 @@ export class OpReturnEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
-
-
     @Column({ unique: true })
     opReturnData: string;
 
