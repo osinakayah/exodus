@@ -1,7 +1,8 @@
 import { AppBackground } from "./app.background";
 import * as fs from 'fs';
 import {MockBitCoinCli } from "./mock.bit.coin.cli";
-
+import dotenv from 'dotenv';
+dotenv.config();
 
 describe("AppBackground Service", ()=> {
 
@@ -24,21 +25,21 @@ describe("AppBackground Service", ()=> {
     });
 
 
-    test('Read Block Height from file', ()=> {
-        const blockHeight: number = appBackroundTask.getLastBlockStopped();
+    test('Read Block Height from file', async ()=> {
+        const blockHeight: number = await appBackroundTask.getLastBlockStopped();
         expect(blockHeight).toEqual(500000);
     });
 
-    test('Update file in block', ()=> {
-        appBackroundTask.updateLastReadBlock(500001);
-        const blockHeight: number = appBackroundTask.getLastBlockStopped();
+    test('Update file in block', async ()=> {
+        await appBackroundTask.updateLastReadBlock(500001);
+        const blockHeight: number = await appBackroundTask.getLastBlockStopped();
         expect(blockHeight).toEqual(500001);
     });
 
-    test('Cant Update file in block with smaller number', ()=> {
-        appBackroundTask.updateLastReadBlock(500004);
-        appBackroundTask.updateLastReadBlock(500003);
-        const blockHeight: number = appBackroundTask.getLastBlockStopped();
+    test('Cant Update file in block with smaller number', async ()=> {
+        await appBackroundTask.updateLastReadBlock(500004);
+        await appBackroundTask.updateLastReadBlock(500003);
+        const blockHeight: number = await appBackroundTask.getLastBlockStopped();
         expect(blockHeight).toEqual(500004);
     });
 
@@ -47,16 +48,16 @@ describe("AppBackground Service", ()=> {
         const mockEmitDataToMainProcess = jest.spyOn(appBackroundTask, 'emitDataToMainProcess');
 
         return appBackroundTask.loopThroughSingleBlock(1).then(() => {
-            expect(mockEmitDataToMainProcess).toHaveBeenCalledWith('00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048', '999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644', 'OP_RETURN 636861726c6579206c6f766573206865696469');
+            expect(mockEmitDataToMainProcess).toHaveBeenCalledWith('00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048', '999e1c837c76a1b7fbb7e57baf87b309960f5ffefbf2a9b95dd890602272f644', 'OP_RETURN 636861726c6579206c6f766573206865696469', 3);
 
         });
 
     });
 
-    test('Does looping start when start() is called', ()=> {
+    test('Does looping start when start() is called', async ()=> {
         jest.useFakeTimers();
         const mockLoopThroughSingleBlock = jest.spyOn(appBackroundTask, 'loopThroughSingleBlock');
-        appBackroundTask.start();
+        await appBackroundTask.start();
         expect(mockLoopThroughSingleBlock).not.toBeCalled();
         expect(setTimeout).toHaveBeenCalledTimes(1);
         jest.runAllTimers();

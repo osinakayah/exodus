@@ -7,12 +7,13 @@ export class OpReturnService {
         return getRepository(OpReturnEntity);
     }
 
-    async saveTransactionOpDetails(blockHash: string, opReturnData: string, transactionHash: string){
+    async saveTransactionOpDetails(blockHeight: number, blockHash: string, opReturnData: string, transactionHash: string){
         const newOpRecordData: OpReturnEntity = new OpReturnEntity();
 
         newOpRecordData.blockHash = blockHash;
         newOpRecordData.opReturnData = opReturnData;
         newOpRecordData.transactionHash = transactionHash;
+        newOpRecordData.blockHeight = blockHeight;
 
         const userRepository = this.getUserRepository();
 

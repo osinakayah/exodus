@@ -15,6 +15,9 @@ export class OpReturnEntity {
     @Column()
     blockHash: string;
 
+    @Column()
+    blockHeight: number;
+
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
 }

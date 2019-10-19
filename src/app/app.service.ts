@@ -14,7 +14,7 @@ export class AppService {
     }
 
     startBitcoindProcess() {
-        exec('./node_modules/bitcoind/bin/bitcoind -txindex -daemon');
+        // exec('./node_modules/bitcoind/bin/bitcoind -txindex -daemon');
     }
 
 
@@ -24,7 +24,7 @@ export class AppService {
 
     registerListeners() {
         this.backgroundProccess.on('message', async (msg) => {
-            await this.opreturnService.saveTransactionOpDetails(msg.blockHash, msg.opData, msg.transactionHash);
+            await this.opreturnService.saveTransactionOpDetails(msg.blockHeight, msg.blockHash, msg.opData, msg.transactionHash);
         });
     }
 }

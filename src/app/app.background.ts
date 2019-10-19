@@ -3,10 +3,11 @@ import * as fs from 'fs';
 import {IBitCoinCli} from "./interfaces/i.bit.coin.cli";
 
 
+
+
 export class AppBackground {
 
     bitCoinCli: IBitCoinCli;
-
     constructor(private readonly mbitCoinCli: IBitCoinCli ){
         this.bitCoinCli = mbitCoinCli;
     }
@@ -18,19 +19,17 @@ export class AppBackground {
                 blockHash = await this.bitCoinCli.getBlockHash(blockHeight)
             }
 
-
             const blockDetails: any = await this.bitCoinCli.getBlock(blockHash);
-
+            await this.updateLastReadBlock(blockDetails.height);
 
             const numberOfTransactionsInBlock = blockDetails.tx.length;
 
             for (let i = 0; i < numberOfTransactionsInBlock; i++) {
                 const singleTx = blockDetails.tx[i];
-                this.emitDataToMainProcess(blockHash, singleTx.txid, singleTx.vout[0].scriptPubKey.asm);
+                this.emitDataToMainProcess(blockHash, singleTx.txid, singleTx.vout[0].scriptPubKey.asm, blockDetails.height);
             }
 
             if (this.isNextBlockAvailable(blockDetails)) {
-                this.updateLastReadBlock(blockDetails.height + 1);
                 return this.loopThroughSingleBlock(blockDetails.height + 1, blockDetails.nextblockhash);
             }
             else {
@@ -42,14 +41,15 @@ export class AppBackground {
             }
         }
         catch (e) {
+            console.error(e);
             setTimeout(() => {
                 return this.loopThroughSingleBlock(blockHeight);
             }, 30 *  60 * 1000);
         }
     }
 
-    start() {
-        const startHeight = this.getLastBlockStopped();
+    async start() {
+        const startHeight = await this.getLastBlockStopped();
 
         // Slight delay waiting for blocks to be indexed
         setTimeout(() => {
@@ -59,42 +59,37 @@ export class AppBackground {
     }
 
     getHexSectionFromOpReturnData(rawHex: string): string{
-        if (rawHex) {
-            return rawHex.substring(10);
-        }
-        return '';
+        return rawHex? rawHex.substring(10): ''
     }
 
-    emitDataToMainProcess(blockHash: string, transactionHash: string, opData: string){
-        process.send({blockHash, transactionHash, opData: this.getHexSectionFromOpReturnData(opData)});
+    emitDataToMainProcess(blockHash: string, transactionHash: string, opData: string, blockHeight: number){
+        process.send({blockHeight, blockHash, transactionHash, opData: this.getHexSectionFromOpReturnData(opData)});
     }
 
     isNextBlockAvailable(blockDetails: any): boolean{
-        if (blockDetails.hasOwnProperty('nextblockhash') && blockDetails.nextblockhash){
-            return true;
-        }
-        return false;
+        return blockDetails.hasOwnProperty('nextblockhash');
     }
 
-    getLastBlockStopped(): number{
+    async getLastBlockStopped(): Promise<number>{
         const path = this.getBlockHeightCachePath();
         try {
-            // I preferred to read the fine synchronously to prevent bugs, the fact the process will block was not an
-            // issue for me since i am in the background process, and most importantly it was a simple task
-            return parseInt(fs.readFileSync(path).toString());
+            const lastBlockHeight = await fs.promises.readFile(path);
+            return parseInt(lastBlockHeight.toString());
         }
         catch (e) {
-            fs.writeFileSync(path, 500000);
-            return 500000;
+            // File doesnt exist
+            const blockStartHeight: number = parseInt(process.env.BLOCK_START_HEIGHT);
+            await fs.promises.writeFile(path, blockStartHeight);
+            return blockStartHeight;
         }
     }
-    updateLastReadBlock(height: number): void{
-        const currentValue: number = this.getLastBlockStopped();
+    async updateLastReadBlock(height: number){
+        const currentValue: number =  await this.getLastBlockStopped();
         if (currentValue >= height) {
             return
         }
         const path = this.getBlockHeightCachePath();
-        fs.writeFileSync(path, height);
+        return await fs.promises.writeFile(path, height);
     }
 
     getBlockHeightCachePath(): string {
@@ -103,4 +98,3 @@ export class AppBackground {
 
 }
 
-// new AppBackground().start();
